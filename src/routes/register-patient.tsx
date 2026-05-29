@@ -116,10 +116,10 @@ function RegisterPatientPage() {
       const patient_code = `MR-${year}-${rand}`;
 
       const { error } = await supabase.from("patients").insert({
-        ...form,
+        ...(form as any),
         patient_code,
         registered_by: user!.id,
-      });
+      } as any);
       if (error) throw error;
 
       await supabase.from("audit_logs").insert({
