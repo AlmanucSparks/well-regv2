@@ -122,3 +122,15 @@
     font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
 }
+
+@media print {
+  body * { visibility: hidden !important; }
+  .patient-card, .patient-card * { visibility: visible !important; }
+  .patient-card {
+    position: absolute !important;
+    left: 50% !important;
+    top: 1cm !important;
+    transform: translateX(-50%) !important;
+  }
+}
+
