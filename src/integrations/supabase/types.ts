@@ -44,6 +44,48 @@ export type Database = {
         }
         Relationships: []
       }
+      license_keys: {
+        Row: {
+          activated_at: string
+          activated_by: string | null
+          created_at: string
+          expires_at: string
+          facility_name: string
+          id: string
+          license_key: string
+          max_users: number
+          notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          activated_at?: string
+          activated_by?: string | null
+          created_at?: string
+          expires_at: string
+          facility_name: string
+          id?: string
+          license_key: string
+          max_users?: number
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          activated_at?: string
+          activated_by?: string | null
+          created_at?: string
+          expires_at?: string
+          facility_name?: string
+          id?: string
+          license_key?: string
+          max_users?: number
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       patients: {
         Row: {
           address: string | null
@@ -61,6 +103,7 @@ export type Database = {
           employer: string | null
           ethnicity: string | null
           fingerprint_captured: boolean
+          fingerprint_template: string | null
           first_name: string
           gender: string
           id: string
@@ -119,6 +162,7 @@ export type Database = {
           employer?: string | null
           ethnicity?: string | null
           fingerprint_captured?: boolean
+          fingerprint_template?: string | null
           first_name: string
           gender: string
           id?: string
@@ -177,6 +221,7 @@ export type Database = {
           employer?: string | null
           ethnicity?: string | null
           fingerprint_captured?: boolean
+          fingerprint_template?: string | null
           first_name?: string
           gender?: string
           id?: string
