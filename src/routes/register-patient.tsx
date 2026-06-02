@@ -13,12 +13,21 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { CheckCircle2, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { WebcamCapture } from "@/components/biometrics/WebcamCapture";
+import { SignaturePad } from "@/components/biometrics/SignaturePad";
+import { FingerprintCapture } from "@/components/biometrics/FingerprintCapture";
 
 export const Route = createFileRoute("/register-patient")({ component: RegisterPatientPage });
 
-const STEPS = ["Personal", "Contact", "Identity", "Next of Kin", "Medical", "Review"] as const;
+const STEPS = ["Personal", "Contact", "Identity", "Next of Kin", "Medical", "Biometrics", "Review"] as const;
 
 type FormState = Record<string, any>;
+
+function newPatientCode() {
+  const year = new Date().getFullYear();
+  const rand = Math.floor(Math.random() * 1000000).toString().padStart(6, "0");
+  return `MR-${year}-${rand}`;
+}
 
 const initial: FormState = {
   title: "Mr",
@@ -60,16 +69,21 @@ const initial: FormState = {
   smoking_status: "Non-smoker",
   alcohol_use: "None",
   insurance_provider: "",
+  photo_url: "",
+  signature_url: "",
+  fingerprint_template: "",
+  fingerprint_captured: false,
 };
 
 function RegisterPatientPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
+  const [patientCode] = useState(newPatientCode);
   const [form, setForm] = useState<FormState>(initial);
   const [confirmed, setConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState<{ code: string; name: string } | null>(null);
+  const [success, setSuccess] = useState<{ code: string; name: string; id: string } | null>(null);
 
   const progress = useMemo(() => ((step + 1) / STEPS.length) * 100, [step]);
   const set = (k: string) => (v: any) => setForm((f) => ({ ...f, [k]: v }));
@@ -106,30 +120,32 @@ function RegisterPatientPage() {
     if (!confirmed) { toast.error("Please confirm the information is correct."); return; }
     setSubmitting(true);
     try {
-      // dup check
       const { data: dup } = await supabase
         .from("patients").select("id").eq("id_number", form.id_number).maybeSingle();
       if (dup) { toast.error("This ID number is already registered."); return; }
 
-      const year = new Date().getFullYear();
-      const rand = Math.floor(Math.random() * 1000000).toString().padStart(6, "0");
-      const patient_code = `MR-${year}-${rand}`;
-
-      const { error } = await supabase.from("patients").insert({
-        ...(form as any),
-        patient_code,
+      const { fingerprint_template, ...rest } = form;
+      const payload: any = {
+        ...rest,
+        patient_code: patientCode,
         registered_by: user!.id,
-      } as any);
+        fingerprint_template: fingerprint_template || null,
+        fingerprint_captured: Boolean(fingerprint_template),
+        photo_url: form.photo_url || null,
+        signature_url: form.signature_url || null,
+      };
+
+      const { data: inserted, error } = await supabase.from("patients").insert(payload).select("id").single();
       if (error) throw error;
 
       await supabase.from("audit_logs").insert({
         user_id: user!.id,
         action: "patient.create",
         entity_type: "patient",
-        entity_id: patient_code,
+        entity_id: patientCode,
       });
 
-      setSuccess({ code: patient_code, name: `${form.first_name} ${form.last_name}` });
+      setSuccess({ code: patientCode, name: `${form.first_name} ${form.last_name}`, id: inserted.id });
     } catch (e: any) {
       toast.error(e.message ?? "Failed to register patient");
     } finally {
@@ -151,8 +167,10 @@ function RegisterPatientPage() {
             </div>
             <div className="rounded-lg bg-primary-soft px-6 py-4 font-mono text-2xl text-primary">{success.code}</div>
             <div className="flex flex-wrap justify-center gap-2">
-              <Button onClick={() => window.print()}>Print Registration Card</Button>
-              <Button variant="outline" onClick={() => { setForm(initial); setStep(0); setConfirmed(false); setSuccess(null); }}>Register Another</Button>
+              <Button onClick={() => navigate({ to: "/patients/$id", params: { id: success.id } })}>
+                Open Patient Card
+              </Button>
+              <Button variant="outline" onClick={() => window.location.reload()}>Register Another</Button>
               <Button variant="ghost" onClick={() => navigate({ to: "/patients" })}>View Records</Button>
             </div>
           </CardContent>
@@ -170,6 +188,7 @@ function RegisterPatientPage() {
             <span className="text-muted-foreground">{Math.round(progress)}%</span>
           </div>
           <Progress value={progress} className="h-2" />
+          <p className="mt-2 text-right font-mono text-[10px] text-muted-foreground">Draft ID: {patientCode}</p>
         </div>
 
         <Card>
@@ -179,7 +198,8 @@ function RegisterPatientPage() {
             {step === 2 && <IdentityStep form={form} set={set} />}
             {step === 3 && <NokStep form={form} set={set} />}
             {step === 4 && <MedicalStep form={form} set={set} />}
-            {step === 5 && (
+            {step === 5 && <BiometricsStep form={form} set={set} patientCode={patientCode} />}
+            {step === 6 && (
               <ReviewStep form={form} confirmed={confirmed} setConfirmed={setConfirmed} />
             )}
           </CardContent>
@@ -298,6 +318,28 @@ function MedicalStep({ form, set }: any) {
   );
 }
 
+function BiometricsStep({ form, set, patientCode }: any) {
+  return (
+    <div className="space-y-8">
+      <div>
+        <h3 className="mb-2 text-sm font-semibold text-primary">Patient Photo</h3>
+        <p className="mb-3 text-xs text-muted-foreground">Use the device camera to capture a clear ID photo.</p>
+        <WebcamCapture patientCode={patientCode} initialUrl={form.photo_url || null} onCaptured={(url) => set("photo_url")(url)} />
+      </div>
+      <div className="border-t pt-6">
+        <h3 className="mb-2 text-sm font-semibold text-primary">Fingerprint</h3>
+        <p className="mb-3 text-xs text-muted-foreground">Software enrollment. Replace with hardware SDK when a scanner is connected.</p>
+        <FingerprintCapture initialTemplate={form.fingerprint_template || null} onCaptured={(t) => set("fingerprint_template")(t)} />
+      </div>
+      <div className="border-t pt-6">
+        <h3 className="mb-2 text-sm font-semibold text-primary">Signature</h3>
+        <p className="mb-3 text-xs text-muted-foreground">Patient must sign to consent to data processing.</p>
+        <SignaturePad patientCode={patientCode} initialUrl={form.signature_url || null} onSaved={(url) => set("signature_url")(url)} />
+      </div>
+    </div>
+  );
+}
+
 function ReviewStep({ form, confirmed, setConfirmed }: any) {
   const sections: [string, string[]][] = [
     ["Personal", ["title","first_name","middle_name","last_name","date_of_birth","gender","marital_status","blood_group","occupation"]],
@@ -320,10 +362,27 @@ function ReviewStep({ form, confirmed, setConfirmed }: any) {
           </div>
         </div>
       ))}
+      <div>
+        <h3 className="mb-2 text-sm font-semibold text-primary">Biometrics</h3>
+        <div className="grid gap-2 rounded-md border bg-muted/30 p-4 text-sm sm:grid-cols-3">
+          <Badge label="Photo" ok={!!form.photo_url} />
+          <Badge label="Fingerprint" ok={!!form.fingerprint_template} />
+          <Badge label="Signature" ok={!!form.signature_url} />
+        </div>
+      </div>
       <label className="flex items-start gap-3 rounded-md border bg-primary-soft/50 p-4">
         <Checkbox checked={confirmed} onCheckedChange={(v) => setConfirmed(Boolean(v))} className="mt-0.5" />
         <span className="text-sm">I confirm all information entered is correct and complete.</span>
       </label>
+    </div>
+  );
+}
+
+function Badge({ label, ok }: { label: string; ok: boolean }) {
+  return (
+    <div className={`flex items-center justify-between rounded-md border px-3 py-2 ${ok ? "border-success/30 bg-success/10 text-success-foreground" : "border-muted bg-muted/40 text-muted-foreground"}`}>
+      <span className="text-xs">{label}</span>
+      <span className="text-xs font-semibold">{ok ? "✓ Captured" : "Skipped"}</span>
     </div>
   );
 }
