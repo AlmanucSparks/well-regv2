@@ -75,9 +75,17 @@ function PatientsPage() {
                 </thead>
                 <tbody className="divide-y">
                   {rows.map((p) => (
-                    <tr key={p.id} className="hover:bg-muted/30">
-                      <td className="px-4 py-3 font-mono text-xs">{p.patient_code}</td>
-                      <td className="px-4 py-3">{p.first_name} {p.last_name}</td>
+                    <tr key={p.id} className="cursor-pointer hover:bg-muted/30">
+                      <td className="px-4 py-3 font-mono text-xs">
+                        <Link to="/patients/$id" params={{ id: p.id }} className="text-primary hover:underline">
+                          {p.patient_code}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Link to="/patients/$id" params={{ id: p.id }} className="hover:underline">
+                          {p.first_name} {p.last_name}
+                        </Link>
+                      </td>
                       <td className="px-4 py-3 text-muted-foreground">{p.date_of_birth}</td>
                       <td className="px-4 py-3">{p.gender}</td>
                       <td className="px-4 py-3">{p.primary_phone}</td>
