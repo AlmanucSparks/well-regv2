@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, Navigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 import { Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -8,6 +9,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { acceptInvite, getInviteByToken } from "@/lib/invites.functions";
 
 export const Route = createFileRoute("/login")({ component: LoginPage });
 
@@ -22,14 +24,34 @@ const passwordSchema = z
 function LoginPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [email, setEmail] = useState("");
+  const acceptFn = useServerFn(acceptInvite);
+  const getInviteFn = useServerFn(getInviteByToken);
+
+  const urlParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+  const inviteToken = urlParams?.get("invite") ?? null;
+  const inviteEmail = urlParams?.get("email") ?? null;
+
+  const [mode, setMode] = useState<"signin" | "signup">(inviteToken ? "signup" : "signin");
+  const [email, setEmail] = useState(inviteEmail ?? "");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [inviteInfo, setInviteInfo] = useState<{ email: string; role: string; valid: boolean } | null>(null);
 
-  if (!loading && user) return <Navigate to="/dashboard" />;
+  useEffect(() => {
+    if (!inviteToken) return;
+    getInviteFn({ data: { token: inviteToken } })
+      .then((r) => {
+        if (r.invite) {
+          setInviteInfo(r.invite as any);
+          if (!email) setEmail(r.invite.email);
+        }
+      })
+      .catch(() => {});
+  }, [inviteToken]);
+
+  if (!loading && user && !inviteToken) return <Navigate to="/dashboard" />;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -50,12 +72,30 @@ function LoginPage() {
           },
         });
         if (error) throw error;
-        toast.success("Account created. You're signed in.");
+        if (inviteToken) {
+          try {
+            await acceptFn({ data: { token: inviteToken } });
+            toast.success("Invite accepted — welcome to the team");
+          } catch (e: any) {
+            toast.error(`Invite could not be applied: ${e.message}`);
+          }
+        } else {
+          toast.success("Account created. You're signed in.");
+        }
         navigate({ to: "/dashboard" });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        toast.success("Welcome back");
+        if (inviteToken) {
+          try {
+            await acceptFn({ data: { token: inviteToken } });
+            toast.success("Invite accepted");
+          } catch (e: any) {
+            toast.error(e.message);
+          }
+        } else {
+          toast.success("Welcome back");
+        }
         navigate({ to: "/dashboard" });
       }
     } catch (err: any) {
@@ -82,6 +122,17 @@ function LoginPage() {
         </div>
         <div className="text-xs text-sidebar-foreground/50">© {new Date().getFullYear()} MediReg • All rights reserved</div>
       </div>
+
+          {inviteInfo && (
+            <div className={`mt-4 rounded-md border p-3 text-sm ${inviteInfo.valid ? "border-success/40 bg-success/10" : "border-destructive/40 bg-destructive/10"}`}>
+              {inviteInfo.valid ? (
+                <>You've been invited as <strong>{inviteInfo.role}</strong> for <strong>{inviteInfo.email}</strong>. Create your account to accept.</>
+              ) : (
+                <>This invite has expired or already been used.</>
+              )}
+            </div>
+          )}
+
 
       <div className="flex items-center justify-center p-6 sm:p-12">
         <div className="w-full max-w-md">

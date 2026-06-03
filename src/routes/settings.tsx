@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { activateLicense, getLicenseStatus, revokeLicense } from "@/lib/licenses.functions";
 import { useAuth } from "@/lib/auth-context";
 import { KeyRound, ShieldCheck, ShieldAlert, Loader2 } from "lucide-react";
+import { TwoFactorSetup } from "@/components/TwoFactorSetup";
 
 export const Route = createFileRoute("/settings")({ component: SettingsPage });
 
@@ -117,6 +118,8 @@ function SettingsPage() {
             )}
           </CardContent>
         </Card>
+
+        <TwoFactorSetup />
 
         <Card>
           <CardHeader><CardTitle>Facility</CardTitle></CardHeader>
