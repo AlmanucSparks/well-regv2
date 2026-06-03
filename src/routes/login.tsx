@@ -123,6 +123,17 @@ function LoginPage() {
         <div className="text-xs text-sidebar-foreground/50">© {new Date().getFullYear()} MediReg • All rights reserved</div>
       </div>
 
+          {inviteInfo && (
+            <div className={`mt-4 rounded-md border p-3 text-sm ${inviteInfo.valid ? "border-success/40 bg-success/10" : "border-destructive/40 bg-destructive/10"}`}>
+              {inviteInfo.valid ? (
+                <>You've been invited as <strong>{inviteInfo.role}</strong> for <strong>{inviteInfo.email}</strong>. Create your account to accept.</>
+              ) : (
+                <>This invite has expired or already been used.</>
+              )}
+            </div>
+          )}
+
+
       <div className="flex items-center justify-center p-6 sm:p-12">
         <div className="w-full max-w-md">
           <div className="mb-8 lg:hidden">
