@@ -6,11 +6,10 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 // Ciphertext format (base64): [12-byte IV | 16-byte auth tag | ciphertext]
 // Key is read from PII_ENCRYPTION_KEY (any length — hashed to 32 bytes).
 
-async function getKey(): Promise<Uint8Array> {
+async function getKey(): Promise<ArrayBuffer> {
   const raw = process.env.PII_ENCRYPTION_KEY;
   if (!raw) throw new Error("PII_ENCRYPTION_KEY is not configured");
-  const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw));
-  return new Uint8Array(hash);
+  return crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw));
 }
 
 async function importKey(usage: KeyUsage[]) {
@@ -41,13 +40,13 @@ export const encryptPII = createServerFn({ method: "POST" })
     if (!data.plaintext) return { ciphertext: "" };
     const key = await importKey(["encrypt"]);
     const iv = crypto.getRandomValues(new Uint8Array(12));
-    const ct = new Uint8Array(
-      await crypto.subtle.encrypt(
-        { name: "AES-GCM", iv },
-        key,
-        new TextEncoder().encode(data.plaintext),
-      ),
+    const pt = new TextEncoder().encode(data.plaintext);
+    const ctBuf = await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv: iv as BufferSource },
+      key,
+      pt as BufferSource,
     );
+    const ct = new Uint8Array(ctBuf);
     const out = new Uint8Array(iv.length + ct.length);
     out.set(iv, 0);
     out.set(ct, iv.length);
@@ -77,6 +76,10 @@ export const decryptPII = createServerFn({ method: "POST" })
     const raw = b64decode(data.ciphertext.slice(ENC_PREFIX.length));
     const iv = raw.slice(0, 12);
     const ct = raw.slice(12);
-    const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ct);
+    const pt = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: iv as BufferSource },
+      key,
+      ct as BufferSource,
+    );
     return { plaintext: new TextDecoder().decode(pt) };
   });
