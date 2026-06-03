@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, Navigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 import { Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -8,6 +9,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { acceptInvite, getInviteByToken } from "@/lib/invites.functions";
 
 export const Route = createFileRoute("/login")({ component: LoginPage });
 
@@ -22,14 +24,34 @@ const passwordSchema = z
 function LoginPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [email, setEmail] = useState("");
+  const acceptFn = useServerFn(acceptInvite);
+  const getInviteFn = useServerFn(getInviteByToken);
+
+  const urlParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+  const inviteToken = urlParams?.get("invite") ?? null;
+  const inviteEmail = urlParams?.get("email") ?? null;
+
+  const [mode, setMode] = useState<"signin" | "signup">(inviteToken ? "signup" : "signin");
+  const [email, setEmail] = useState(inviteEmail ?? "");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [inviteInfo, setInviteInfo] = useState<{ email: string; role: string; valid: boolean } | null>(null);
 
-  if (!loading && user) return <Navigate to="/dashboard" />;
+  useEffect(() => {
+    if (!inviteToken) return;
+    getInviteFn({ data: { token: inviteToken } })
+      .then((r) => {
+        if (r.invite) {
+          setInviteInfo(r.invite as any);
+          if (!email) setEmail(r.invite.email);
+        }
+      })
+      .catch(() => {});
+  }, [inviteToken]);
+
+  if (!loading && user && !inviteToken) return <Navigate to="/dashboard" />;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
