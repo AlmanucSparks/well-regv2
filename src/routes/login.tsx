@@ -72,12 +72,30 @@ function LoginPage() {
           },
         });
         if (error) throw error;
-        toast.success("Account created. You're signed in.");
+        if (inviteToken) {
+          try {
+            await acceptFn({ data: { token: inviteToken } });
+            toast.success("Invite accepted — welcome to the team");
+          } catch (e: any) {
+            toast.error(`Invite could not be applied: ${e.message}`);
+          }
+        } else {
+          toast.success("Account created. You're signed in.");
+        }
         navigate({ to: "/dashboard" });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        toast.success("Welcome back");
+        if (inviteToken) {
+          try {
+            await acceptFn({ data: { token: inviteToken } });
+            toast.success("Invite accepted");
+          } catch (e: any) {
+            toast.error(e.message);
+          }
+        } else {
+          toast.success("Welcome back");
+        }
         navigate({ to: "/dashboard" });
       }
     } catch (err: any) {
