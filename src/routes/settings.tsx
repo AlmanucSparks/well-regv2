@@ -14,6 +14,7 @@ import { activateLicense, getLicenseStatus, revokeLicense } from "@/lib/licenses
 import { useAuth } from "@/lib/auth-context";
 import { KeyRound, ShieldCheck, ShieldAlert, Loader2 } from "lucide-react";
 import { TwoFactorSetup } from "@/components/TwoFactorSetup";
+import { FacilitiesManager } from "@/components/FacilitiesManager";
 
 export const Route = createFileRoute("/settings")({ component: SettingsPage });
 
@@ -120,6 +121,8 @@ function SettingsPage() {
         </Card>
 
         <TwoFactorSetup />
+
+        {isAdmin && <FacilitiesManager />}
 
         <Card>
           <CardHeader><CardTitle>Facility</CardTitle></CardHeader>
