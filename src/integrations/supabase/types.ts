@@ -44,12 +44,58 @@ export type Database = {
         }
         Relationships: []
       }
+      facilities: {
+        Row: {
+          address: string | null
+          city: string | null
+          code: string | null
+          country: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          code?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          code?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       license_keys: {
         Row: {
           activated_at: string
           activated_by: string | null
           created_at: string
           expires_at: string
+          facility_id: string | null
           facility_name: string
           id: string
           license_key: string
@@ -63,6 +109,7 @@ export type Database = {
           activated_by?: string | null
           created_at?: string
           expires_at: string
+          facility_id?: string | null
           facility_name: string
           id?: string
           license_key: string
@@ -76,6 +123,7 @@ export type Database = {
           activated_by?: string | null
           created_at?: string
           expires_at?: string
+          facility_id?: string | null
           facility_name?: string
           id?: string
           license_key?: string
@@ -84,7 +132,15 @@ export type Database = {
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "license_keys_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       patients: {
         Row: {
@@ -102,8 +158,10 @@ export type Database = {
           email: string | null
           employer: string | null
           ethnicity: string | null
+          facility_id: string | null
           fingerprint_captured: boolean
           fingerprint_template: string | null
+          fingerprints: Json | null
           first_name: string
           gender: string
           id: string
@@ -161,8 +219,10 @@ export type Database = {
           email?: string | null
           employer?: string | null
           ethnicity?: string | null
+          facility_id?: string | null
           fingerprint_captured?: boolean
           fingerprint_template?: string | null
+          fingerprints?: Json | null
           first_name: string
           gender: string
           id?: string
@@ -220,8 +280,10 @@ export type Database = {
           email?: string | null
           employer?: string | null
           ethnicity?: string | null
+          facility_id?: string | null
           fingerprint_captured?: boolean
           fingerprint_template?: string | null
+          fingerprints?: Json | null
           first_name?: string
           gender?: string
           id?: string
@@ -264,12 +326,21 @@ export type Database = {
           title?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "patients_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
           created_at: string
           email: string
+          facility_id: string | null
           full_name: string
           id: string
           last_login: string | null
@@ -280,6 +351,7 @@ export type Database = {
         Insert: {
           created_at?: string
           email: string
+          facility_id?: string | null
           full_name?: string
           id: string
           last_login?: string | null
@@ -290,6 +362,7 @@ export type Database = {
         Update: {
           created_at?: string
           email?: string
+          facility_id?: string | null
           full_name?: string
           id?: string
           last_login?: string | null
@@ -297,7 +370,15 @@ export type Database = {
           photo_url?: string | null
           status?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       staff_invites: {
         Row: {
