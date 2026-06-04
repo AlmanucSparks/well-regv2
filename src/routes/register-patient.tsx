@@ -126,8 +126,17 @@ function RegisterPatientPage() {
       const { fingerprints, ...rest } = form;
       const fp = (fingerprints ?? {}) as Record<string, string>;
       const enrolledCount = Object.keys(fp).length;
+      // Normalize empty date strings to null (Postgres date columns reject "")
+      const dateFields = ["date_of_birth", "id_issue_date", "id_expiry_date"] as const;
+      const cleaned: Record<string, any> = { ...rest };
+      for (const k of Object.keys(cleaned)) {
+        if (cleaned[k] === "") cleaned[k] = null;
+      }
+      for (const d of dateFields) {
+        if (!cleaned[d]) cleaned[d] = null;
+      }
       const payload: any = {
-        ...rest,
+        ...cleaned,
         patient_code: patientCode,
         registered_by: user!.id,
         fingerprints: enrolledCount > 0 ? fp : null,
