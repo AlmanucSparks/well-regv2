@@ -71,8 +71,7 @@ const initial: FormState = {
   insurance_provider: "",
   photo_url: "",
   signature_url: "",
-  fingerprint_template: "",
-  fingerprint_captured: false,
+  fingerprints: {} as Record<string, string>,
 };
 
 function RegisterPatientPage() {
@@ -124,13 +123,16 @@ function RegisterPatientPage() {
         .from("patients").select("id").eq("id_number", form.id_number).maybeSingle();
       if (dup) { toast.error("This ID number is already registered."); return; }
 
-      const { fingerprint_template, ...rest } = form;
+      const { fingerprints, ...rest } = form;
+      const fp = (fingerprints ?? {}) as Record<string, string>;
+      const enrolledCount = Object.keys(fp).length;
       const payload: any = {
         ...rest,
         patient_code: patientCode,
         registered_by: user!.id,
-        fingerprint_template: fingerprint_template || null,
-        fingerprint_captured: Boolean(fingerprint_template),
+        fingerprints: enrolledCount > 0 ? fp : null,
+        fingerprint_template: fp.index ?? null,
+        fingerprint_captured: enrolledCount > 0,
         photo_url: form.photo_url || null,
         signature_url: form.signature_url || null,
       };
@@ -327,9 +329,9 @@ function BiometricsStep({ form, set, patientCode }: any) {
         <WebcamCapture patientCode={patientCode} initialUrl={form.photo_url || null} onCaptured={(url) => set("photo_url")(url)} />
       </div>
       <div className="border-t pt-6">
-        <h3 className="mb-2 text-sm font-semibold text-primary">Fingerprint</h3>
-        <p className="mb-3 text-xs text-muted-foreground">Software enrollment. Replace with hardware SDK when a scanner is connected.</p>
-        <FingerprintCapture initialTemplate={form.fingerprint_template || null} onCaptured={(t) => set("fingerprint_template")(t)} />
+        <h3 className="mb-2 text-sm font-semibold text-primary">Right Hand Fingerprints</h3>
+        <p className="mb-3 text-xs text-muted-foreground">Capture all five fingers of the patient's right hand. Software enrollment — swap for hardware SDK when a scanner is connected.</p>
+        <FingerprintCapture initial={form.fingerprints || null} onChange={(t) => set("fingerprints")(t)} />
       </div>
       <div className="border-t pt-6">
         <h3 className="mb-2 text-sm font-semibold text-primary">Signature</h3>
