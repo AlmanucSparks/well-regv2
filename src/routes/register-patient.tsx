@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
-import { CheckCircle2, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { CheckCircle2, ChevronLeft, ChevronRight, Loader2, Save, Trash2 } from "lucide-react";
 import { WebcamCapture } from "@/components/biometrics/WebcamCapture";
 import { SignaturePad } from "@/components/biometrics/SignaturePad";
 import { FingerprintCapture } from "@/components/biometrics/FingerprintCapture";
@@ -77,12 +77,61 @@ const initial: FormState = {
 function RegisterPatientPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const draftKey = user ? `medireg:patient-draft:${user.id}` : "medireg:patient-draft:anon";
+
   const [step, setStep] = useState(0);
-  const [patientCode] = useState(newPatientCode);
+  const [patientCode, setPatientCode] = useState<string>(newPatientCode);
   const [form, setForm] = useState<FormState>(initial);
   const [confirmed, setConfirmed] = useState(false);
+  const [draftLoaded, setDraftLoaded] = useState(false);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState<{ code: string; name: string; id: string } | null>(null);
+
+  // Restore draft on mount
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (raw) {
+        const parsed = JSON.parse(raw) as {
+          form: FormState; step: number; patientCode: string; savedAt: string;
+        };
+        setForm({ ...initial, ...parsed.form });
+        setStep(parsed.step ?? 0);
+        if (parsed.patientCode) setPatientCode(parsed.patientCode);
+        setSavedAt(parsed.savedAt ? new Date(parsed.savedAt) : null);
+        toast.info("Resumed your saved draft");
+      }
+    } catch { /* ignore */ }
+    setDraftLoaded(true);
+  }, [draftKey]);
+
+  // Autosave on changes (debounced)
+  useEffect(() => {
+    if (!draftLoaded || success) return;
+    const t = setTimeout(() => {
+      try {
+        const stamp = new Date();
+        localStorage.setItem(
+          draftKey,
+          JSON.stringify({ form, step, patientCode, savedAt: stamp.toISOString() }),
+        );
+        setSavedAt(stamp);
+      } catch { /* quota etc. */ }
+    }, 600);
+    return () => clearTimeout(t);
+  }, [form, step, patientCode, draftLoaded, draftKey, success]);
+
+  function discardDraft() {
+    try { localStorage.removeItem(draftKey); } catch { /* ignore */ }
+    setForm(initial);
+    setStep(0);
+    setPatientCode(newPatientCode());
+    setSavedAt(null);
+    setConfirmed(false);
+    toast.success("Draft cleared");
+  }
 
   const progress = useMemo(() => ((step + 1) / STEPS.length) * 100, [step]);
   const set = (k: string) => (v: any) => setForm((f) => ({ ...f, [k]: v }));
@@ -157,6 +206,7 @@ function RegisterPatientPage() {
       });
 
       setSuccess({ code: patientCode, name: `${form.first_name} ${form.last_name}`, id: inserted.id });
+      try { localStorage.removeItem(draftKey); } catch { /* ignore */ }
     } catch (e: any) {
       toast.error(e.message ?? "Failed to register patient");
     } finally {
@@ -199,7 +249,21 @@ function RegisterPatientPage() {
             <span className="text-muted-foreground">{Math.round(progress)}%</span>
           </div>
           <Progress value={progress} className="h-2" />
-          <p className="mt-2 text-right font-mono text-[10px] text-muted-foreground">Draft ID: {patientCode}</p>
+          <div className="mt-2 flex items-center justify-between text-[10px] text-muted-foreground">
+            <span className="inline-flex items-center gap-1">
+              <Save className="h-3 w-3" />
+              {savedAt ? `Draft auto-saved · ${savedAt.toLocaleTimeString()}` : "Draft will auto-save"}
+              <button
+                type="button"
+                onClick={discardDraft}
+                className="ml-2 inline-flex items-center gap-1 rounded-sm border border-transparent px-1 py-0.5 hover:border-destructive/30 hover:text-destructive"
+                title="Discard draft and start over"
+              >
+                <Trash2 className="h-3 w-3" /> Discard
+              </button>
+            </span>
+            <span className="font-mono">Draft ID: {patientCode}</span>
+          </div>
         </div>
 
         <Card>
