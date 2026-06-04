@@ -12,9 +12,13 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { activateLicense, getLicenseStatus, revokeLicense } from "@/lib/licenses.functions";
 import { useAuth } from "@/lib/auth-context";
-import { KeyRound, ShieldCheck, ShieldAlert, Loader2 } from "lucide-react";
+import { KeyRound, ShieldCheck, ShieldAlert, Loader2, Sun, Moon, Monitor, Bell, Globe, Download } from "lucide-react";
 import { TwoFactorSetup } from "@/components/TwoFactorSetup";
 import { FacilitiesManager } from "@/components/FacilitiesManager";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/settings")({ component: SettingsPage });
 
@@ -124,12 +128,9 @@ function SettingsPage() {
 
         {isAdmin && <FacilitiesManager />}
 
-        <Card>
-          <CardHeader><CardTitle>Facility</CardTitle></CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            Facility profile and branding settings will appear here once a license is active.
-          </CardContent>
-        </Card>
+        <AppearanceCard />
+        <NotificationsCard />
+        {isAdmin && <DataExportCard />}
       </div>
     </AppLayout>
   );
@@ -141,5 +142,177 @@ function Row({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
       <span className="text-muted-foreground">{k}</span>
       <span className={mono ? "font-mono" : "font-medium"}>{v}</span>
     </div>
+  );
+}
+
+type Theme = "light" | "dark" | "system";
+
+function AppearanceCard() {
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window === "undefined") return "system";
+    return (localStorage.getItem("medireg:theme") as Theme) || "system";
+  });
+  const [density, setDensity] = useState<string>(() =>
+    typeof window === "undefined" ? "comfortable" : localStorage.getItem("medireg:density") || "comfortable",
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const root = document.documentElement;
+    const apply = (t: Theme) => {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const dark = t === "dark" || (t === "system" && prefersDark);
+      root.classList.toggle("dark", dark);
+    };
+    apply(theme);
+    localStorage.setItem("medireg:theme", theme);
+  }, [theme]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    document.documentElement.dataset.density = density;
+    localStorage.setItem("medireg:density", density);
+  }, [density]);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><Sun className="h-4 w-4 text-primary" /> Appearance</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label className="text-xs">Theme</Label>
+          <div className="grid grid-cols-3 gap-2">
+            {(["light", "dark", "system"] as Theme[]).map((t) => (
+              <Button
+                key={t}
+                type="button"
+                variant={theme === t ? "default" : "outline"}
+                size="sm"
+                onClick={() => setTheme(t)}
+                className="gap-1.5 capitalize"
+              >
+                {t === "light" ? <Sun className="h-3.5 w-3.5" /> : t === "dark" ? <Moon className="h-3.5 w-3.5" /> : <Monitor className="h-3.5 w-3.5" />}
+                {t}
+              </Button>
+            ))}
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label className="text-xs">Density</Label>
+          <Select value={density} onValueChange={setDensity}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="compact">Compact</SelectItem>
+              <SelectItem value="comfortable">Comfortable</SelectItem>
+              <SelectItem value="spacious">Spacious</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function NotificationsCard() {
+  const [emailDigest, setEmailDigest] = useState(() =>
+    typeof window === "undefined" ? true : localStorage.getItem("medireg:notif:digest") !== "0",
+  );
+  const [licenseAlerts, setLicenseAlerts] = useState(() =>
+    typeof window === "undefined" ? true : localStorage.getItem("medireg:notif:license") !== "0",
+  );
+  const [language, setLanguage] = useState(() =>
+    typeof window === "undefined" ? "en" : localStorage.getItem("medireg:language") || "en",
+  );
+
+  useEffect(() => { localStorage.setItem("medireg:notif:digest", emailDigest ? "1" : "0"); }, [emailDigest]);
+  useEffect(() => { localStorage.setItem("medireg:notif:license", licenseAlerts ? "1" : "0"); }, [licenseAlerts]);
+  useEffect(() => { localStorage.setItem("medireg:language", language); }, [language]);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><Bell className="h-4 w-4 text-primary" /> Notifications & Locale</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4 text-sm">
+        <Toggle label="Weekly email digest" checked={emailDigest} onChange={setEmailDigest} />
+        <Toggle label="License expiry alerts" checked={licenseAlerts} onChange={setLicenseAlerts} />
+        <div className="space-y-2">
+          <Label className="flex items-center gap-1 text-xs"><Globe className="h-3 w-3" /> Language</Label>
+          <Select value={language} onValueChange={setLanguage}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="en">English</SelectItem>
+              <SelectItem value="sw">Swahili</SelectItem>
+              <SelectItem value="fr">Français</SelectItem>
+              <SelectItem value="es">Español</SelectItem>
+              <SelectItem value="ar">العربية</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className="flex items-center justify-between rounded-md border bg-muted/30 p-3">
+      <span className="text-sm">{label}</span>
+      <Switch checked={checked} onCheckedChange={onChange} />
+    </div>
+  );
+}
+
+function DataExportCard() {
+  const [exporting, setExporting] = useState(false);
+  async function exportPatients() {
+    setExporting(true);
+    try {
+      const { data, error } = await supabase
+        .from("patients")
+        .select("patient_code,first_name,middle_name,last_name,gender,date_of_birth,primary_phone,email,city,country,created_at")
+        .order("created_at", { ascending: false })
+        .limit(5000);
+      if (error) throw error;
+      const rows = data ?? [];
+      const headers = Object.keys(rows[0] ?? { patient_code: "" });
+      const csv = [
+        headers.join(","),
+        ...rows.map((r: any) =>
+          headers.map((h) => {
+            const v = r[h] ?? "";
+            const s = String(v).replace(/"/g, '""');
+            return /[",\n]/.test(s) ? `"${s}"` : s;
+          }).join(","),
+        ),
+      ].join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `patients-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Exported ${rows.length} patient record${rows.length === 1 ? "" : "s"}`);
+    } catch (e: any) {
+      toast.error(e.message ?? "Export failed");
+    } finally {
+      setExporting(false);
+    }
+  }
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><Download className="h-4 w-4 text-primary" /> Data Export</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3 text-sm">
+        <p className="text-muted-foreground">Download a CSV snapshot of patient records for offline backup or analysis.</p>
+        <Button onClick={exportPatients} disabled={exporting} className="gap-2">
+          {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          Export patients CSV
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
