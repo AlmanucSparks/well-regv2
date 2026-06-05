@@ -8,10 +8,8 @@ import { PatientCard } from "@/components/PatientCard";
 import { QRCodeSVG } from "qrcode.react";
 import { ArrowLeft, Printer, Loader2, Fingerprint, FileDown } from "lucide-react";
 import { format } from "date-fns";
-import { useRef } from "react";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 import { toast } from "sonner";
+import { downloadPatientPdf, printPatientDocument } from "@/lib/patient-document";
 
 export const Route = createFileRoute("/patients/$id")({ component: PatientDetailPage });
 
@@ -31,7 +29,6 @@ function PatientDetailPage() {
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<"card" | "full">("full");
   const [downloading, setDownloading] = useState(false);
-  const pdfRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -59,53 +56,25 @@ function PatientDetailPage() {
   const fullName = [patient.first_name, patient.middle_name, patient.last_name].filter(Boolean).join(" ");
   const fps = (patient.fingerprints ?? {}) as Record<string, string>;
 
-  function print(which: "card" | "full") {
-    setMode(which);
+  function printCard() {
+    setMode("card");
     setTimeout(() => window.print(), 50);
   }
-
-  async function downloadPdf() {
-    if (!pdfRef.current) return;
-    setDownloading(true);
-    const node = pdfRef.current;
-    // Temporarily reveal the off-screen print surface for capture.
-    const prevPos = node.style.position;
-    const prevLeft = node.style.left;
-    const prevTop = node.style.top;
-    node.style.position = "fixed";
-    node.style.left = "0";
-    node.style.top = "0";
-    node.style.zIndex = "-1";
+  function printFull() {
     try {
-      const canvas = await html2canvas(node, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-      });
-      const img = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
-      const imgH = (canvas.height * pageW) / canvas.width;
-      let heightLeft = imgH;
-      let position = 0;
-      pdf.addImage(img, "PNG", 0, position, pageW, imgH);
-      heightLeft -= pageH;
-      while (heightLeft > 0) {
-        position = heightLeft - imgH;
-        pdf.addPage();
-        pdf.addImage(img, "PNG", 0, position, pageW, imgH);
-        heightLeft -= pageH;
-      }
-      pdf.save(`${patient.patient_code}-${[patient.first_name, patient.last_name].filter(Boolean).join("-")}.pdf`);
+      printPatientDocument(patient);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Print failed");
+    }
+  }
+  async function downloadPdf() {
+    setDownloading(true);
+    try {
+      await downloadPatientPdf(patient);
       toast.success("PDF downloaded");
     } catch (e: any) {
       toast.error(e?.message ?? "PDF generation failed");
     } finally {
-      node.style.position = prevPos;
-      node.style.left = prevLeft;
-      node.style.top = prevTop;
-      node.style.zIndex = "";
       setDownloading(false);
     }
   }
@@ -117,10 +86,10 @@ function PatientDetailPage() {
           <ArrowLeft className="h-4 w-4" /> Back to records
         </Button>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => print("card")} className="gap-2">
+          <Button variant="outline" onClick={printCard} className="gap-2">
             <Printer className="h-4 w-4" /> Print ID Card
           </Button>
-          <Button variant="outline" onClick={() => print("full")} className="gap-2">
+          <Button variant="outline" onClick={printFull} className="gap-2">
             <Printer className="h-4 w-4" /> Print Full Document
           </Button>
           <Button onClick={downloadPdf} disabled={downloading} className="gap-2">
@@ -176,35 +145,14 @@ function PatientDetailPage() {
         </div>
       </div>
 
-      {/* PRINT SURFACES */}
-      {mode === "card" ? (
+      {/* PRINT SURFACE for ID Card (browser print). Full document uses pop-up. */}
+      {mode === "card" && (
         <div className="print-area hidden print:block">
           <div className="patient-card mx-auto">
             <PatientCard patient={patient} />
           </div>
         </div>
-      ) : (
-        <div className="print-area hidden print:block">
-          <FullDocument patient={patient} fingerprints={fps} fullName={fullName} />
-        </div>
       )}
-
-      {/* Off-screen surface used as the source for PDF rendering. */}
-      <div
-        aria-hidden
-        style={{
-          position: "absolute",
-          left: "-10000px",
-          top: 0,
-          width: "794px",
-          background: "#ffffff",
-          padding: "24px",
-        }}
-        ref={pdfRef}
-        className="no-print"
-      >
-        <FullDocument patient={patient} fingerprints={fps} fullName={fullName} />
-      </div>
     </AppLayout>
   );
 }
