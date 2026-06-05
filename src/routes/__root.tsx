@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/lib/auth-context";
+import { ThemeInit } from "@/lib/theme";
 
 import appCss from "../styles.css?url";
 
@@ -56,7 +57,15 @@ function RootShell({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <head><HeadContent /></head>
-      <body>{children}<Scripts /></body>
+      <body>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('medireg:theme')||'system';var d=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);document.documentElement.style.colorScheme=d?'dark':'light';var de=localStorage.getItem('medireg:density')||'comfortable';document.documentElement.dataset.density=de;}catch(e){}})();`,
+          }}
+        />
+        {children}
+        <Scripts />
+      </body>
     </html>
   );
 }
@@ -66,6 +75,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <ThemeInit />
         <Outlet />
         <Toaster richColors position="top-right" />
       </AuthProvider>

@@ -19,6 +19,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { applyTheme, type Theme } from "@/lib/theme";
 
 export const Route = createFileRoute("/settings")({ component: SettingsPage });
 
@@ -145,8 +146,6 @@ function Row({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
   );
 }
 
-type Theme = "light" | "dark" | "system";
-
 function AppearanceCard() {
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window === "undefined") return "system";
@@ -158,14 +157,8 @@ function AppearanceCard() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const root = document.documentElement;
-    const apply = (t: Theme) => {
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      const dark = t === "dark" || (t === "system" && prefersDark);
-      root.classList.toggle("dark", dark);
-    };
-    apply(theme);
     localStorage.setItem("medireg:theme", theme);
+    applyTheme(theme);
   }, [theme]);
 
   useEffect(() => {
