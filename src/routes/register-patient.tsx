@@ -16,6 +16,7 @@ import { CheckCircle2, ChevronLeft, ChevronRight, Loader2, Save, Trash2 } from "
 import { WebcamCapture } from "@/components/biometrics/WebcamCapture";
 import { SignaturePad } from "@/components/biometrics/SignaturePad";
 import { FingerprintCapture } from "@/components/biometrics/FingerprintCapture";
+import { useFacilities } from "@/lib/use-facilities";
 
 export const Route = createFileRoute("/register-patient")({ component: RegisterPatientPage });
 
@@ -31,6 +32,7 @@ function newPatientCode() {
 
 const initial: FormState = {
   title: "Mr",
+  facility_id: "",
   first_name: "",
   middle_name: "",
   last_name: "",
@@ -75,8 +77,9 @@ const initial: FormState = {
 };
 
 function RegisterPatientPage() {
-  const { user } = useAuth();
+  const { user, facilityId: userFacilityId, isAdmin, isSupervisor } = useAuth();
   const navigate = useNavigate();
+  const { facilities } = useFacilities();
   const draftKey = user ? `medireg:patient-draft:${user.id}` : "medireg:patient-draft:anon";
 
   const [step, setStep] = useState(0);
@@ -87,6 +90,14 @@ function RegisterPatientPage() {
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState<{ code: string; name: string; id: string } | null>(null);
+
+  // Auto-select facility for non-admin users (or when they have one assigned)
+  useEffect(() => {
+    if (!draftLoaded) return;
+    if (!form.facility_id && userFacilityId) {
+      setForm((f) => ({ ...f, facility_id: userFacilityId }));
+    }
+  }, [draftLoaded, userFacilityId, form.facility_id]);
 
   // Restore draft on mount
   useEffect(() => {
@@ -148,6 +159,7 @@ function RegisterPatientPage() {
       if (!form.date_of_birth) return "Date of birth is required.";
       const dob = new Date(form.date_of_birth);
       if (dob > new Date()) return "Date of birth cannot be in the future.";
+      if (!form.facility_id) return "Please select a facility.";
     }
     if (step === 1) {
       if (!/^[0-9]{10,15}$/.test(form.primary_phone)) return "Primary phone must be 10–15 digits.";
