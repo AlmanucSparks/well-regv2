@@ -113,9 +113,15 @@ function RegisterPatientPage() {
     const t = setTimeout(() => {
       try {
         const stamp = new Date();
+        // Exclude sensitive PII from the local draft to avoid persisting it unencrypted.
+        const {
+          id_number, fingerprints, fingerprint_template, photo_url, signature_url,
+          medical_conditions, current_medications, allergies, insurance_policy_number,
+          ...safeForm
+        } = form as any;
         localStorage.setItem(
           draftKey,
-          JSON.stringify({ form, step, patientCode, savedAt: stamp.toISOString() }),
+          JSON.stringify({ form: safeForm, step, patientCode, savedAt: stamp.toISOString() }),
         );
         setSavedAt(stamp);
       } catch { /* quota etc. */ }

@@ -74,6 +74,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signOut() {
+    try {
+      // Clear any locally persisted patient registration drafts on sign-out
+      Object.keys(localStorage)
+        .filter((k) => k.startsWith("medireg:patient-draft:"))
+        .forEach((k) => localStorage.removeItem(k));
+    } catch { /* ignore */ }
     await supabase.auth.signOut();
     window.location.href = "/login";
   }
