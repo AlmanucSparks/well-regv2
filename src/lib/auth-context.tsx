@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const INACTIVITY_MS = 15 * 60 * 1000; // 15 minutes
 
-type Role = "admin" | "registrar" | "supervisor";
+type Role = "admin" | "registrar" | "supervisor" | "super_admin";
 
 interface AuthState {
   user: User | null;
@@ -14,6 +14,7 @@ interface AuthState {
   facilityId: string | null;
   loading: boolean;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   isRegistrar: boolean;
   isSupervisor: boolean;
   signOut: () => Promise<void>;
@@ -100,7 +101,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         roles,
         facilityId,
         loading,
-        isAdmin: roles.includes("admin"),
+        isAdmin: roles.includes("admin") || roles.includes("super_admin"),
+        isSuperAdmin: roles.includes("super_admin"),
         isRegistrar: roles.includes("registrar"),
         isSupervisor: roles.includes("supervisor"),
         signOut,

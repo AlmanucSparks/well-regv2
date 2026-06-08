@@ -26,7 +26,7 @@ const navItems = [
 ];
 
 export function AppLayout({ children, title }: { children: ReactNode; title?: string }) {
-  const { user, loading, isAdmin, signOut } = useAuth();
+  const { user, loading, isAdmin, isSuperAdmin, signOut } = useAuth();
   const path = useRouterState({ select: (s) => s.location.pathname });
 
   if (loading) {
@@ -83,8 +83,8 @@ export function AppLayout({ children, title }: { children: ReactNode; title?: st
 
         <div className="space-y-3 border-t border-sidebar-border p-4">
           <div className="rounded-lg bg-success/15 px-3 py-2 text-xs">
-            <div className="font-medium text-success">License Active</div>
-            <div className="text-sidebar-foreground/70">365 days remaining</div>
+            <div className="font-medium text-success">{isSuperAdmin ? "Super Admin" : "License Active"}</div>
+            <div className="text-sidebar-foreground/70">{isSuperAdmin ? "License exempt · full access" : "365 days remaining"}</div>
           </div>
         </div>
       </aside>
@@ -95,7 +95,7 @@ export function AppLayout({ children, title }: { children: ReactNode; title?: st
           <div className="flex items-center gap-3">
             <div className="hidden text-right text-xs sm:block">
               <div className="font-medium text-foreground">{user.user_metadata?.full_name || user.email}</div>
-              <div className="text-muted-foreground">{isAdmin ? "Admin" : "Staff"}</div>
+              <div className="text-muted-foreground">{isSuperAdmin ? "Super Admin" : isAdmin ? "Admin" : "Staff"}</div>
             </div>
             <Avatar className="h-9 w-9">
               <AvatarFallback className="bg-primary text-primary-foreground">{initials}</AvatarFallback>
