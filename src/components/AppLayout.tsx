@@ -26,7 +26,7 @@ const navItems = [
 ];
 
 export function AppLayout({ children, title }: { children: ReactNode; title?: string }) {
-  const { user, loading, isAdmin, signOut } = useAuth();
+  const { user, loading, isAdmin, isSuperAdmin, signOut } = useAuth();
   const path = useRouterState({ select: (s) => s.location.pathname });
 
   if (loading) {

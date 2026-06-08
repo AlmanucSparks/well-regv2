@@ -70,7 +70,6 @@ function SettingsPage() {
             )}
           </CardHeader>
           <CardContent className="space-y-4">
-            {isAdmin && (data as any)?.superAdminBypass ? null : null}
             {isLoading ? (
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             ) : license ? (
