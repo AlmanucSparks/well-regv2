@@ -178,10 +178,13 @@ function LoginPage() {
           </form>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            {mode === "signin" ? "No account yet?" : "Already have an account?"}{" "}
-            <button onClick={() => setMode(mode === "signin" ? "signup" : "signin")} className="font-medium text-primary hover:underline">
-              {mode === "signin" ? "Create one" : "Sign in"}
-            </button>
+            {inviteToken ? (
+              <button onClick={() => setMode(mode === "signin" ? "signup" : "signin")} className="font-medium text-primary hover:underline">
+                {mode === "signin" ? "Create your account" : "Sign in instead"}
+              </button>
+            ) : (
+              <>Accounts are invite-only. Contact your administrator for access.</>
+            )}
           </p>
         </div>
       </div>
