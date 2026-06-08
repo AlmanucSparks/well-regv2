@@ -286,7 +286,7 @@ function RegisterPatientPage() {
 
         <Card>
           <CardContent className="p-6">
-            {step === 0 && <PersonalStep form={form} set={set} />}
+            {step === 0 && <PersonalStep form={form} set={set} facilities={facilities} lockFacility={!isAdmin && !isSupervisor && !!userFacilityId} />}
             {step === 1 && <ContactStep form={form} set={set} />}
             {step === 2 && <IdentityStep form={form} set={set} />}
             {step === 3 && <NokStep form={form} set={set} />}
@@ -337,9 +337,21 @@ function Sel({ value, onChange, options }: { value: string; onChange: (v: string
   );
 }
 
-function PersonalStep({ form, set }: any) {
+function PersonalStep({ form, set, facilities, lockFacility }: any) {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
+      <div className="sm:col-span-2">
+        <Field label="Facility">
+          <Select value={form.facility_id || ""} onValueChange={set("facility_id")} disabled={lockFacility}>
+            <SelectTrigger><SelectValue placeholder={facilities?.length ? "Select facility" : "No facilities available — add one in Settings"} /></SelectTrigger>
+            <SelectContent>
+              {(facilities ?? []).map((f: any) => (
+                <SelectItem key={f.id} value={f.id}>{f.name}{f.code ? ` (${f.code})` : ""}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+      </div>
       <Field label="Title"><Sel value={form.title} onChange={set("title")} options={["Mr","Mrs","Miss","Dr","Prof","Rev","Other"]} /></Field>
       <Field label="First name"><Input value={form.first_name} onChange={(e) => set("first_name")(e.target.value)} maxLength={50} /></Field>
       <Field label="Middle name" optional><Input value={form.middle_name} onChange={(e) => set("middle_name")(e.target.value)} maxLength={50} /></Field>
