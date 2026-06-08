@@ -4,11 +4,14 @@ import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { UserPlus, Search, Eye, Printer, FileDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { downloadPatientPdf, printPatientDocument } from "@/lib/patient-document";
+import { useAuth } from "@/lib/auth-context";
+import { useFacilities } from "@/lib/use-facilities";
 
 export const Route = createFileRoute("/patients")({ component: PatientsPage });
 
@@ -28,6 +31,10 @@ function PatientsPage() {
   const [q, setQ] = useState("");
   const [rows, setRows] = useState<Patient[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const { isAdmin, isSupervisor } = useAuth();
+  const { facilities } = useFacilities();
+  const [facilityFilter, setFacilityFilter] = useState<string>("all");
+  const canFilter = isAdmin || isSupervisor;
 
   async function fetchFull(id: string) {
     const { data, error } = await supabase.from("patients").select("*").eq("id", id).maybeSingle();
@@ -64,25 +71,39 @@ function PatientsPage() {
     const t = setTimeout(async () => {
       let query = supabase
         .from("patients")
-        .select("id,patient_code,first_name,last_name,date_of_birth,gender,primary_phone,nationality,created_at")
+        .select("id,patient_code,first_name,last_name,date_of_birth,gender,primary_phone,nationality,created_at,facility_id")
         .order("created_at", { ascending: false })
         .limit(50);
       if (q.trim()) {
         const s = `%${q.trim()}%`;
         query = query.or(`first_name.ilike.${s},last_name.ilike.${s},patient_code.ilike.${s},primary_phone.ilike.${s}`);
       }
+      if (canFilter && facilityFilter !== "all") {
+        query = query.eq("facility_id", facilityFilter);
+      }
       const { data } = await query;
       setRows((data ?? []) as Patient[]);
     }, 200);
     return () => clearTimeout(t);
-  }, [q]);
+  }, [q, facilityFilter, canFilter]);
 
   return (
     <AppLayout title="Patient Records">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="relative w-full max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, ID, phone…" className="pl-9" />
+        <div className="flex flex-1 flex-wrap items-center gap-3">
+          <div className="relative w-full max-w-sm">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, ID, phone…" className="pl-9" />
+          </div>
+          {canFilter && (
+            <Select value={facilityFilter} onValueChange={setFacilityFilter}>
+              <SelectTrigger className="w-56"><SelectValue placeholder="All facilities" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All facilities</SelectItem>
+                {facilities.map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
         </div>
         <Link to="/register-patient">
           <Button className="gap-2"><UserPlus className="h-4 w-4" /> Register New</Button>

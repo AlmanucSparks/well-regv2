@@ -11,6 +11,7 @@ interface AuthState {
   user: User | null;
   session: Session | null;
   roles: Role[];
+  facilityId: string | null;
   loading: boolean;
   isAdmin: boolean;
   isRegistrar: boolean;
@@ -24,6 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
+  const [facilityId, setFacilityId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -52,16 +54,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(s?.user ?? null);
       if (s?.user) {
         // defer to avoid deadlock
-        setTimeout(() => loadRoles(s.user.id), 0);
+        setTimeout(() => { loadRoles(s.user.id); loadFacility(s.user.id); }, 0);
       } else {
         setRoles([]);
+        setFacilityId(null);
       }
     });
 
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setUser(data.session?.user ?? null);
-      if (data.session?.user) loadRoles(data.session.user.id);
+      if (data.session?.user) { loadRoles(data.session.user.id); loadFacility(data.session.user.id); }
       setLoading(false);
     });
 
@@ -71,6 +74,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function loadRoles(uid: string) {
     const { data } = await supabase.from("user_roles").select("role").eq("user_id", uid);
     setRoles((data ?? []).map((r) => r.role as Role));
+  }
+
+  async function loadFacility(uid: string) {
+    const { data } = await supabase.from("profiles").select("facility_id").eq("id", uid).maybeSingle();
+    setFacilityId((data?.facility_id as string | null) ?? null);
   }
 
   async function signOut() {
@@ -90,6 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         session,
         roles,
+        facilityId,
         loading,
         isAdmin: roles.includes("admin"),
         isRegistrar: roles.includes("registrar"),
