@@ -83,8 +83,8 @@ export function AppLayout({ children, title }: { children: ReactNode; title?: st
 
         <div className="space-y-3 border-t border-sidebar-border p-4">
           <div className="rounded-lg bg-success/15 px-3 py-2 text-xs">
-            <div className="font-medium text-success">License Active</div>
-            <div className="text-sidebar-foreground/70">365 days remaining</div>
+            <div className="font-medium text-success">{isSuperAdmin ? "Super Admin" : "License Active"}</div>
+            <div className="text-sidebar-foreground/70">{isSuperAdmin ? "License exempt · full access" : "365 days remaining"}</div>
           </div>
         </div>
       </aside>
