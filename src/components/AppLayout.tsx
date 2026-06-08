@@ -95,7 +95,7 @@ export function AppLayout({ children, title }: { children: ReactNode; title?: st
           <div className="flex items-center gap-3">
             <div className="hidden text-right text-xs sm:block">
               <div className="font-medium text-foreground">{user.user_metadata?.full_name || user.email}</div>
-              <div className="text-muted-foreground">{isAdmin ? "Admin" : "Staff"}</div>
+              <div className="text-muted-foreground">{isSuperAdmin ? "Super Admin" : isAdmin ? "Admin" : "Staff"}</div>
             </div>
             <Avatar className="h-9 w-9">
               <AvatarFallback className="bg-primary text-primary-foreground">{initials}</AvatarFallback>
