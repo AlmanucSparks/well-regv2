@@ -5,6 +5,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { PatientCard } from "@/components/PatientCard";
+import { PatientIdCard, printIdCard } from "@/components/PatientIdCard";
+import { PatientVisitHistory } from "@/components/PatientVisitHistory";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QRCodeSVG } from "qrcode.react";
 import { ArrowLeft, Printer, Loader2, Fingerprint, FileDown } from "lucide-react";
 import { format } from "date-fns";
@@ -29,6 +32,7 @@ function PatientDetailPage() {
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<"card" | "full">("full");
   const [downloading, setDownloading] = useState(false);
+  const [tab, setTab] = useState<"details" | "visits">("details");
 
   useEffect(() => {
     (async () => {
@@ -57,8 +61,7 @@ function PatientDetailPage() {
   const fps = (patient.fingerprints ?? {}) as Record<string, string>;
 
   function printCard() {
-    setMode("card");
-    setTimeout(() => window.print(), 50);
+    try { printIdCard(patient); } catch (e: any) { toast.error(e?.message ?? "Print failed"); }
   }
   function printFull() {
     try {
@@ -99,7 +102,13 @@ function PatientDetailPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_auto] no-print">
+      <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="no-print">
+        <TabsList>
+          <TabsTrigger value="details">Patient Details</TabsTrigger>
+          <TabsTrigger value="visits">Visit History</TabsTrigger>
+        </TabsList>
+        <TabsContent value="details" className="mt-4">
+      <div className="grid gap-6 lg:grid-cols-[1fr_auto]">
         <Card>
           <CardContent className="space-y-4 p-6 text-sm">
             <Section title="Identity">
@@ -135,7 +144,7 @@ function PatientDetailPage() {
         </Card>
 
         <div className="space-y-3">
-          <PatientCard patient={patient} />
+          <PatientIdCard patient={patient} />
           {patient.signature_url && (
             <div className="rounded-lg border bg-white p-3">
               <p className="mb-1 text-xs text-muted-foreground">Signature on file</p>
@@ -144,6 +153,11 @@ function PatientDetailPage() {
           )}
         </div>
       </div>
+        </TabsContent>
+        <TabsContent value="visits" className="mt-4">
+          <PatientVisitHistory patientId={patient.id} patientCode={patient.patient_code} defaultFacilityId={patient.facility_id} />
+        </TabsContent>
+      </Tabs>
 
       {/* PRINT SURFACE for ID Card (browser print). Full document uses pop-up. */}
       {mode === "card" && (

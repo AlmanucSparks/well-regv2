@@ -142,6 +142,54 @@ export type Database = {
           },
         ]
       }
+      patient_visits: {
+        Row: {
+          created_at: string
+          facility_id: string | null
+          id: string
+          notes: string | null
+          patient_id: string
+          reason: string
+          recorded_by: string
+          visit_date: string
+        }
+        Insert: {
+          created_at?: string
+          facility_id?: string | null
+          id?: string
+          notes?: string | null
+          patient_id: string
+          reason: string
+          recorded_by: string
+          visit_date?: string
+        }
+        Update: {
+          created_at?: string
+          facility_id?: string | null
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          reason?: string
+          recorded_by?: string
+          visit_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_visits_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_visits_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           address: string | null
