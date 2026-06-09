@@ -10,6 +10,7 @@ import {
   ScrollText,
   Loader2,
   UserCog,
+  FileBarChart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -20,6 +21,7 @@ const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/register-patient", label: "Register Patient", icon: UserPlus },
   { to: "/patients", label: "Patient Records", icon: Users },
+  { to: "/reports", label: "Reports", icon: FileBarChart },
   { to: "/staff", label: "Staff Management", icon: UserCog, adminOnly: true },
   { to: "/audit", label: "Audit Logs", icon: ScrollText, adminOnly: true },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
