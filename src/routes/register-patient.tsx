@@ -17,6 +17,7 @@ import { WebcamCapture } from "@/components/biometrics/WebcamCapture";
 import { SignaturePad } from "@/components/biometrics/SignaturePad";
 import { FingerprintCapture } from "@/components/biometrics/FingerprintCapture";
 import { useFacilities } from "@/lib/use-facilities";
+import { printIdCard } from "@/components/PatientIdCard";
 
 export const Route = createFileRoute("/register-patient")({ component: RegisterPatientPage });
 
@@ -248,6 +249,28 @@ function RegisterPatientPage() {
             <div className="flex flex-wrap justify-center gap-2">
               <Button onClick={() => navigate({ to: "/patients/$id", params: { id: success.id } })}>
                 Open Patient Card
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  try {
+                    printIdCard({
+                      id: success.id,
+                      patient_code: success.code,
+                      first_name: form.first_name,
+                      middle_name: form.middle_name,
+                      last_name: form.last_name,
+                      date_of_birth: form.date_of_birth,
+                      gender: form.gender,
+                      blood_group: form.blood_group,
+                      photo_url: form.photo_url,
+                    });
+                  } catch (e: any) {
+                    toast.error(e?.message ?? "Print failed");
+                  }
+                }}
+              >
+                Print ID Card
               </Button>
               <Button variant="outline" onClick={() => window.location.reload()}>Register Another</Button>
               <Button variant="ghost" onClick={() => navigate({ to: "/patients" })}>View Records</Button>
