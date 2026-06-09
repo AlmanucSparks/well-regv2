@@ -1,5 +1,7 @@
 import { QRCodeSVG } from "qrcode.react";
 import { ShieldCheck } from "lucide-react";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
 interface Patient {
   id: string;
@@ -71,13 +73,7 @@ export function printIdCard(patient: Patient, facility = "MediReg Clinic") {
   const fullName = [patient.first_name, patient.middle_name, patient.last_name].filter(Boolean).join(" ");
   const esc = (v: any) =>
     v === null || v === undefined ? "" : String(v).replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]!));
-  // Render the QR component to inline SVG markup so the popup has no network dependency.
-  // Lazy import to keep this util tree-shakeable.
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { renderToStaticMarkup } = require("react-dom/server") as typeof import("react-dom/server");
-  const React = require("react") as typeof import("react");
-  const { QRCodeSVG } = require("qrcode.react") as typeof import("qrcode.react");
-  const qrSvg = renderToStaticMarkup(React.createElement(QRCodeSVG, { value: url, size: 200, level: "M" }));
+  const qrSvg = renderToStaticMarkup(createElement(QRCodeSVG, { value: url, size: 200, level: "M" }));
   const html = `<!doctype html><html><head><meta charset="utf-8"/><title>${esc(fullName)} — ID Card</title>
 <style>
   body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#0f172a;background:#fff;}
