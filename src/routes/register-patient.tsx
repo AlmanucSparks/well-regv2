@@ -428,7 +428,11 @@ function RegisterPatientPage() {
           <Button variant="outline" onClick={back} disabled={step === 0}>
             <ChevronLeft className="mr-1 h-4 w-4" /> Back
           </Button>
-          {step < STEPS.length - 1 ? (
+          {isCompleting && step === 5 ? (
+            <Button onClick={submit} disabled={submitting}>
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save Biometrics
+            </Button>
+          ) : step < STEPS.length - 1 ? (
             <Button onClick={next}>Next <ChevronRight className="ml-1 h-4 w-4" /></Button>
           ) : (
             <Button onClick={submit} disabled={submitting || !confirmed}>
