@@ -5,9 +5,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
-import { UserPlus, Search, Eye, Printer, FileDown, Loader2 } from "lucide-react";
+import { UserPlus, Search, Eye, Printer, FileDown, Loader2, ClipboardCheck } from "lucide-react";
 import { toast } from "sonner";
 import { downloadPatientPdf, printPatientDocument } from "@/lib/patient-document";
 import { useAuth } from "@/lib/auth-context";
@@ -25,6 +27,9 @@ interface Patient {
   primary_phone: string;
   nationality: string | null;
   created_at: string;
+  photo_url?: string | null;
+  signature_url?: string | null;
+  fingerprint_captured?: boolean | null;
 }
 
 function PatientsPage() {
@@ -34,6 +39,7 @@ function PatientsPage() {
   const { isAdmin, isSupervisor } = useAuth();
   const { facilities } = useFacilities();
   const [facilityFilter, setFacilityFilter] = useState<string>("all");
+  const [tab, setTab] = useState<"all" | "incomplete">("all");
   const canFilter = isAdmin || isSupervisor;
 
   async function fetchFull(id: string) {
@@ -71,7 +77,7 @@ function PatientsPage() {
     const t = setTimeout(async () => {
       let query = supabase
         .from("patients")
-        .select("id,patient_code,first_name,last_name,date_of_birth,gender,primary_phone,nationality,created_at,facility_id")
+        .select("id,patient_code,first_name,last_name,date_of_birth,gender,primary_phone,nationality,created_at,facility_id,photo_url,signature_url,fingerprint_captured")
         .order("created_at", { ascending: false })
         .limit(50);
       if (q.trim()) {
@@ -81,11 +87,14 @@ function PatientsPage() {
       if (canFilter && facilityFilter !== "all") {
         query = query.eq("facility_id", facilityFilter);
       }
+      if (tab === "incomplete") {
+        query = query.or("photo_url.is.null,signature_url.is.null,fingerprint_captured.is.false");
+      }
       const { data } = await query;
       setRows((data ?? []) as Patient[]);
     }, 200);
     return () => clearTimeout(t);
-  }, [q, facilityFilter, canFilter]);
+  }, [q, facilityFilter, canFilter, tab]);
 
   return (
     <AppLayout title="Patient Records">
@@ -110,10 +119,21 @@ function PatientsPage() {
         </Link>
       </div>
 
+      <Tabs value={tab} onValueChange={(v) => setTab(v as "all" | "incomplete")} className="mb-4">
+        <TabsList>
+          <TabsTrigger value="all">All Patients</TabsTrigger>
+          <TabsTrigger value="incomplete" className="gap-2">
+            <ClipboardCheck className="h-3.5 w-3.5" /> Incomplete
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       <Card>
         <CardContent className="p-0">
           {rows.length === 0 ? (
-            <p className="py-12 text-center text-sm text-muted-foreground">No patients found.</p>
+            <p className="py-12 text-center text-sm text-muted-foreground">
+              {tab === "incomplete" ? "All patient records are complete." : "No patients found."}
+            </p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -124,7 +144,7 @@ function PatientsPage() {
                     <th className="px-4 py-3">DOB</th>
                     <th className="px-4 py-3">Gender</th>
                     <th className="px-4 py-3">Phone</th>
-                    <th className="px-4 py-3">Nationality</th>
+                    {tab === "incomplete" ? <th className="px-4 py-3">Missing</th> : <th className="px-4 py-3">Nationality</th>}
                     <th className="px-4 py-3">Registered</th>
                     <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
@@ -145,10 +165,27 @@ function PatientsPage() {
                       <td className="px-4 py-3 text-muted-foreground">{p.date_of_birth}</td>
                       <td className="px-4 py-3">{p.gender}</td>
                       <td className="px-4 py-3">{p.primary_phone}</td>
-                      <td className="px-4 py-3">{p.nationality ?? "—"}</td>
+                      {tab === "incomplete" ? (
+                        <td className="px-4 py-3">
+                          <div className="flex flex-wrap gap-1">
+                            {!p.photo_url && <Badge variant="destructive" className="text-[10px]">No Photo</Badge>}
+                            {!p.fingerprint_captured && <Badge variant="destructive" className="text-[10px]">No Fingerprint</Badge>}
+                            {!p.signature_url && <Badge variant="destructive" className="text-[10px]">No Signature</Badge>}
+                          </div>
+                        </td>
+                      ) : (
+                        <td className="px-4 py-3">{p.nationality ?? "—"}</td>
+                      )}
                       <td className="px-4 py-3 text-muted-foreground">{format(new Date(p.created_at), "PP")}</td>
                       <td className="px-4 py-3">
                         <div className="flex justify-end gap-1">
+                          {tab === "incomplete" && (
+                            <Link to="/register-patient" search={{ complete: p.id } as any}>
+                              <Button size="sm" variant="outline" className="gap-1" title="Complete biometrics">
+                                <ClipboardCheck className="h-3.5 w-3.5" /> Complete
+                              </Button>
+                            </Link>
+                          )}
                           <Link to="/patients/$id" params={{ id: p.id }}>
                             <Button size="sm" variant="ghost" title="View full record"><Eye className="h-4 w-4" /></Button>
                           </Link>
