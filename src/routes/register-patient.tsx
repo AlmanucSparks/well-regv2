@@ -12,14 +12,17 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
-import { CheckCircle2, ChevronLeft, ChevronRight, Loader2, Save, Trash2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Loader2, Save, Trash2, X } from "lucide-react";
 import { WebcamCapture } from "@/components/biometrics/WebcamCapture";
 import { SignaturePad } from "@/components/biometrics/SignaturePad";
 import { FingerprintCapture } from "@/components/biometrics/FingerprintCapture";
 import { useFacilities } from "@/lib/use-facilities";
 import { printIdCard } from "@/components/PatientIdCard";
 
-export const Route = createFileRoute("/register-patient")({ component: RegisterPatientPage });
+export const Route = createFileRoute("/register-patient")({
+  validateSearch: (s: Record<string, unknown>) => ({ complete: typeof s.complete === "string" ? s.complete : undefined }),
+  component: RegisterPatientPage,
+});
 
 const STEPS = ["Personal", "Contact", "Identity", "Next of Kin", "Medical", "Biometrics", "Review"] as const;
 
@@ -81,6 +84,7 @@ function RegisterPatientPage() {
   const { user, facilityId: userFacilityId, isAdmin, isSupervisor } = useAuth();
   const navigate = useNavigate();
   const { facilities } = useFacilities();
+  const { complete: completeId } = Route.useSearch();
   const draftKey = user ? `medireg:patient-draft:${user.id}` : "medireg:patient-draft:anon";
 
   const [step, setStep] = useState(0);
@@ -91,6 +95,10 @@ function RegisterPatientPage() {
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState<{ code: string; name: string; id: string } | null>(null);
+  const [duplicates, setDuplicates] = useState<Array<{ id: string; patient_code: string; first_name: string; last_name: string; facility_id: string | null; created_at: string }>>([]);
+  const [duplicateDismissed, setDuplicateDismissed] = useState(false);
+  const [checkingDup, setCheckingDup] = useState(false);
+  const isCompleting = !!completeId;
 
   // Auto-select facility for non-admin users (or when they have one assigned)
   useEffect(() => {
@@ -100,8 +108,9 @@ function RegisterPatientPage() {
     }
   }, [draftLoaded, userFacilityId, form.facility_id]);
 
-  // Restore draft on mount
+  // Restore draft on mount, OR load existing patient in complete-record mode
   useEffect(() => {
+    if (isCompleting) return; // handled below
     if (typeof window === "undefined") return;
     try {
       const raw = localStorage.getItem(draftKey);
@@ -117,11 +126,28 @@ function RegisterPatientPage() {
       }
     } catch { /* ignore */ }
     setDraftLoaded(true);
-  }, [draftKey]);
+  }, [draftKey, isCompleting]);
+
+  // Load existing patient for "Complete Record" flow → jump to Biometrics step
+  useEffect(() => {
+    if (!isCompleting || !completeId) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase.from("patients").select("*").eq("id", completeId).maybeSingle();
+      if (cancelled) return;
+      if (error || !data) { toast.error(error?.message ?? "Patient not found"); setDraftLoaded(true); return; }
+      setForm({ ...initial, ...(data as any), fingerprints: (data as any).fingerprints ?? {} });
+      setPatientCode(data.patient_code);
+      setStep(5); // Biometrics
+      setDraftLoaded(true);
+      toast.info(`Completing biometrics for ${data.first_name} ${data.last_name}`);
+    })();
+    return () => { cancelled = true; };
+  }, [isCompleting, completeId]);
 
   // Autosave on changes (debounced)
   useEffect(() => {
-    if (!draftLoaded || success) return;
+    if (!draftLoaded || success || isCompleting) return;
     const t = setTimeout(() => {
       try {
         const stamp = new Date();
@@ -139,7 +165,7 @@ function RegisterPatientPage() {
       } catch { /* quota etc. */ }
     }, 600);
     return () => clearTimeout(t);
-  }, [form, step, patientCode, draftLoaded, draftKey, success]);
+  }, [form, step, patientCode, draftLoaded, draftKey, success, isCompleting]);
 
   function discardDraft() {
     try { localStorage.removeItem(draftKey); } catch { /* ignore */ }
@@ -176,14 +202,62 @@ function RegisterPatientPage() {
     return null;
   }
 
-  function next() {
+  async function checkDuplicates() {
+    if (isCompleting) return;
+    if (!form.first_name || !form.last_name || !form.date_of_birth) { setDuplicates([]); return; }
+    setCheckingDup(true);
+    try {
+      const { data } = await supabase
+        .from("patients")
+        .select("id,patient_code,first_name,last_name,facility_id,created_at")
+        .ilike("first_name", form.first_name.trim())
+        .ilike("last_name", form.last_name.trim())
+        .eq("date_of_birth", form.date_of_birth)
+        .limit(5);
+      setDuplicates((data ?? []) as any);
+      setDuplicateDismissed(false);
+    } finally {
+      setCheckingDup(false);
+    }
+  }
+
+  async function next() {
     const err = validateStep();
     if (err) { toast.error(err); return; }
+    if (step === 0) { await checkDuplicates(); }
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
   }
   function back() { setStep((s) => Math.max(s - 1, 0)); }
 
   async function submit() {
+    if (isCompleting && completeId) {
+      setSubmitting(true);
+      try {
+        const fp = (form.fingerprints ?? {}) as Record<string, string>;
+        const enrolledCount = Object.keys(fp).length;
+        const { error } = await supabase.from("patients").update({
+          photo_url: form.photo_url || null,
+          signature_url: form.signature_url || null,
+          fingerprints: enrolledCount > 0 ? fp : null,
+          fingerprint_template: fp.index ?? null,
+          fingerprint_captured: enrolledCount > 0,
+        }).eq("id", completeId);
+        if (error) throw error;
+        await supabase.from("audit_logs").insert({
+          user_id: user!.id,
+          action: "patient.biometrics.update",
+          entity_type: "patient",
+          entity_id: patientCode,
+        });
+        toast.success("Biometrics updated");
+        navigate({ to: "/patients/$id", params: { id: completeId } });
+      } catch (e: any) {
+        toast.error(e?.message ?? "Failed to update patient");
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
     if (!confirmed) { toast.error("Please confirm the information is correct."); return; }
     setSubmitting(true);
     try {
@@ -284,9 +358,38 @@ function RegisterPatientPage() {
   return (
     <AppLayout title="Register Patient">
       <div className="mx-auto max-w-3xl">
+        {duplicates.length > 0 && !duplicateDismissed && (
+          <div className="mb-4 flex items-start gap-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
+            <AlertTriangle className="mt-0.5 h-5 w-5 flex-none text-amber-600" />
+            <div className="flex-1 space-y-1">
+              <p className="font-semibold text-amber-900 dark:text-amber-200">
+                Possible duplicate{duplicates.length > 1 ? "s" : ""} detected
+              </p>
+              <p className="text-xs text-amber-900/90 dark:text-amber-200/90">
+                A patient with the same name and date of birth already exists. Please verify before continuing.
+              </p>
+              <ul className="mt-2 space-y-1 text-xs">
+                {duplicates.map((d) => {
+                  const fac = facilities.find((f) => f.id === d.facility_id)?.name ?? "Unassigned";
+                  return (
+                    <li key={d.id} className="font-mono">
+                      • {d.first_name} {d.last_name} ({d.patient_code}) — {fac} · registered {new Date(d.created_at).toLocaleDateString()}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+            <button type="button" onClick={() => setDuplicateDismissed(true)} className="rounded p-1 text-amber-700 hover:bg-amber-500/20" title="Dismiss">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
         <div className="mb-6">
           <div className="mb-2 flex items-center justify-between text-xs">
-            <span className="font-medium text-primary">Step {step + 1} of {STEPS.length}: {STEPS[step]}</span>
+            <span className="font-medium text-primary">
+              {isCompleting ? "Completing biometrics" : `Step ${step + 1} of ${STEPS.length}: ${STEPS[step]}`}
+              {checkingDup && <span className="ml-2 text-muted-foreground">· checking for duplicates…</span>}
+            </span>
             <span className="text-muted-foreground">{Math.round(progress)}%</span>
           </div>
           <Progress value={progress} className="h-2" />
@@ -325,7 +428,11 @@ function RegisterPatientPage() {
           <Button variant="outline" onClick={back} disabled={step === 0}>
             <ChevronLeft className="mr-1 h-4 w-4" /> Back
           </Button>
-          {step < STEPS.length - 1 ? (
+          {isCompleting && step === 5 ? (
+            <Button onClick={submit} disabled={submitting}>
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save Biometrics
+            </Button>
+          ) : step < STEPS.length - 1 ? (
             <Button onClick={next}>Next <ChevronRight className="ml-1 h-4 w-4" /></Button>
           ) : (
             <Button onClick={submit} disabled={submitting || !confirmed}>
