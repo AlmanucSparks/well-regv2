@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PatientCard } from "@/components/PatientCard";
 import { PatientIdCard, printIdCard } from "@/components/PatientIdCard";
 import { PatientVisitHistory } from "@/components/PatientVisitHistory";
+import { PatientVitalsHistory } from "@/components/PatientVitalsHistory";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QRCodeSVG } from "qrcode.react";
 import { ArrowLeft, Printer, Loader2, Fingerprint, FileDown } from "lucide-react";
@@ -32,7 +33,7 @@ function PatientDetailPage() {
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<"card" | "full">("full");
   const [downloading, setDownloading] = useState(false);
-  const [tab, setTab] = useState<"details" | "visits">("details");
+  const [tab, setTab] = useState<"details" | "visits" | "vitals">("details");
 
   useEffect(() => {
     (async () => {
@@ -106,6 +107,7 @@ function PatientDetailPage() {
         <TabsList>
           <TabsTrigger value="details">Patient Details</TabsTrigger>
           <TabsTrigger value="visits">Visit History</TabsTrigger>
+          <TabsTrigger value="vitals">Vitals History</TabsTrigger>
         </TabsList>
         <TabsContent value="details" className="mt-4">
       <div className="grid gap-6 lg:grid-cols-[1fr_auto]">
@@ -156,6 +158,9 @@ function PatientDetailPage() {
         </TabsContent>
         <TabsContent value="visits" className="mt-4">
           <PatientVisitHistory patientId={patient.id} patientCode={patient.patient_code} defaultFacilityId={patient.facility_id} />
+        </TabsContent>
+        <TabsContent value="vitals" className="mt-4">
+          <PatientVitalsHistory patientId={patient.id} />
         </TabsContent>
       </Tabs>
 
