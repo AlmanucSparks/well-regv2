@@ -190,6 +190,75 @@ export type Database = {
           },
         ]
       }
+      patient_vitals: {
+        Row: {
+          bp_diastolic: number | null
+          bp_systolic: number | null
+          created_at: string
+          facility_id: string | null
+          height_cm: number | null
+          id: string
+          notes: string | null
+          patient_id: string
+          pulse_bpm: number | null
+          recorded_by: string
+          respiratory_rate: number | null
+          spo2_percent: number | null
+          temperature_c: number | null
+          visit_date: string
+          weight_kg: number | null
+        }
+        Insert: {
+          bp_diastolic?: number | null
+          bp_systolic?: number | null
+          created_at?: string
+          facility_id?: string | null
+          height_cm?: number | null
+          id?: string
+          notes?: string | null
+          patient_id: string
+          pulse_bpm?: number | null
+          recorded_by: string
+          respiratory_rate?: number | null
+          spo2_percent?: number | null
+          temperature_c?: number | null
+          visit_date?: string
+          weight_kg?: number | null
+        }
+        Update: {
+          bp_diastolic?: number | null
+          bp_systolic?: number | null
+          created_at?: string
+          facility_id?: string | null
+          height_cm?: number | null
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          pulse_bpm?: number | null
+          recorded_by?: string
+          respiratory_rate?: number | null
+          spo2_percent?: number | null
+          temperature_c?: number | null
+          visit_date?: string
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_vitals_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_vitals_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           address: string | null
