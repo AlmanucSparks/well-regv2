@@ -29,6 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [roles, setRoles] = useState<Role[]>([]);
   const [facilityId, setFacilityId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -55,32 +56,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
+        setProfileLoaded(false);
         // defer to avoid deadlock
-        setTimeout(() => { loadRoles(s.user.id); loadFacility(s.user.id); }, 0);
+        setTimeout(() => { loadProfile(s.user.id); }, 0);
       } else {
         setRoles([]);
         setFacilityId(null);
+        setProfileLoaded(true);
       }
     });
 
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setUser(data.session?.user ?? null);
-      if (data.session?.user) { loadRoles(data.session.user.id); loadFacility(data.session.user.id); }
+      if (data.session?.user) {
+        loadProfile(data.session.user.id);
+      } else {
+        setProfileLoaded(true);
+      }
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  async function loadRoles(uid: string) {
-    const { data } = await supabase.from("user_roles").select("role").eq("user_id", uid);
-    setRoles((data ?? []).map((r) => r.role as Role));
-  }
-
-  async function loadFacility(uid: string) {
-    const { data } = await supabase.from("profiles").select("facility_id").eq("id", uid).maybeSingle();
-    setFacilityId((data?.facility_id as string | null) ?? null);
+  async function loadProfile(uid: string) {
+    const [rolesRes, profileRes] = await Promise.all([
+      supabase.from("user_roles").select("role").eq("user_id", uid),
+      supabase.from("profiles").select("facility_id").eq("id", uid).maybeSingle(),
+    ]);
+    setRoles((rolesRes.data ?? []).map((r) => r.role as Role));
+    setFacilityId((profileRes.data?.facility_id as string | null) ?? null);
+    setProfileLoaded(true);
   }
 
   async function signOut() {
@@ -101,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         roles,
         facilityId,
-        loading,
+        loading: loading || (!!user && !profileLoaded),
         isAdmin: roles.includes("admin") || roles.includes("super_admin"),
         isSuperAdmin: roles.includes("super_admin"),
         isRegistrar: roles.includes("registrar"),
