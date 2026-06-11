@@ -10,7 +10,7 @@ import { PatientVisitHistory } from "@/components/PatientVisitHistory";
 import { PatientVitalsHistory } from "@/components/PatientVitalsHistory";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QRCodeSVG } from "qrcode.react";
-import { ArrowLeft, Printer, Loader2, Fingerprint, FileDown } from "lucide-react";
+import { ArrowLeft, Printer, Loader2, Fingerprint, FileDown, Receipt } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { downloadPatientPdf, printPatientDocument } from "@/lib/patient-document";
@@ -90,6 +90,13 @@ function PatientDetailPage() {
           <ArrowLeft className="h-4 w-4" /> Back to records
         </Button>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => navigate({ to: "/billing", search: { patientId: patient.id } as any })}
+            className="gap-2"
+          >
+            <Receipt className="h-4 w-4" /> Invoice
+          </Button>
           <Button variant="outline" onClick={printCard} className="gap-2">
             <Printer className="h-4 w-4" /> Print ID Card
           </Button>

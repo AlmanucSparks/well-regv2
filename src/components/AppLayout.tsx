@@ -12,6 +12,7 @@ import {
   UserCog,
   FileBarChart,
   Stethoscope,
+  Receipt,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -23,6 +24,7 @@ const navItems = [
   { to: "/register-patient", label: "Register Patient", icon: UserPlus },
   { to: "/patients", label: "Patient Records", icon: Users },
   { to: "/triage", label: "Triage", icon: Stethoscope, nurseOrAdmin: true },
+  { to: "/billing", label: "Billing", icon: Receipt },
   { to: "/reports", label: "Reports", icon: FileBarChart },
   { to: "/staff", label: "Staff Management", icon: UserCog, adminOnly: true },
   { to: "/audit", label: "Audit Logs", icon: ScrollText, adminOnly: true },

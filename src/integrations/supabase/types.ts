@@ -89,6 +89,99 @@ export type Database = {
         }
         Relationships: []
       }
+      invoices: {
+        Row: {
+          bank_reference: string | null
+          created_at: string
+          created_by: string | null
+          discount_amount: number
+          facility_id: string | null
+          grand_total: number
+          id: string
+          insurance_auth_code: string | null
+          insurance_scheme: string | null
+          invoice_number: string
+          line_items: Json
+          mpesa_reference: string | null
+          notes: string | null
+          paid_at: string | null
+          patient_id: string
+          payment_method:
+            | Database["public"]["Enums"]["invoice_payment_method"]
+            | null
+          status: Database["public"]["Enums"]["invoice_status"]
+          subtotal: number
+          tax_amount: number
+          tax_percent: number
+          updated_at: string
+        }
+        Insert: {
+          bank_reference?: string | null
+          created_at?: string
+          created_by?: string | null
+          discount_amount?: number
+          facility_id?: string | null
+          grand_total?: number
+          id?: string
+          insurance_auth_code?: string | null
+          insurance_scheme?: string | null
+          invoice_number?: string
+          line_items?: Json
+          mpesa_reference?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          patient_id: string
+          payment_method?:
+            | Database["public"]["Enums"]["invoice_payment_method"]
+            | null
+          status?: Database["public"]["Enums"]["invoice_status"]
+          subtotal?: number
+          tax_amount?: number
+          tax_percent?: number
+          updated_at?: string
+        }
+        Update: {
+          bank_reference?: string | null
+          created_at?: string
+          created_by?: string | null
+          discount_amount?: number
+          facility_id?: string | null
+          grand_total?: number
+          id?: string
+          insurance_auth_code?: string | null
+          insurance_scheme?: string | null
+          invoice_number?: string
+          line_items?: Json
+          mpesa_reference?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          patient_id?: string
+          payment_method?:
+            | Database["public"]["Enums"]["invoice_payment_method"]
+            | null
+          status?: Database["public"]["Enums"]["invoice_status"]
+          subtotal?: number
+          tax_amount?: number
+          tax_percent?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       license_keys: {
         Row: {
           activated_at: string
@@ -562,6 +655,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_invoice_number: { Args: never; Returns: string }
       generate_patient_code: { Args: never; Returns: string }
       get_user_facility_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
@@ -574,6 +668,8 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "registrar" | "supervisor" | "super_admin" | "nurse"
+      invoice_payment_method: "cash" | "mpesa" | "insurance" | "bank"
+      invoice_status: "draft" | "paid" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -702,6 +798,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "registrar", "supervisor", "super_admin", "nurse"],
+      invoice_payment_method: ["cash", "mpesa", "insurance", "bank"],
+      invoice_status: ["draft", "paid", "cancelled"],
     },
   },
 } as const
