@@ -182,6 +182,201 @@ export type Database = {
           },
         ]
       }
+      lab_orders: {
+        Row: {
+          alkaline_phosphatase_u_l: number | null
+          bilirubin_mg_dl: number | null
+          blood_group: string | null
+          chest_xray_finding: string | null
+          cholesterol_mg_dl: number | null
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          created_by: string | null
+          creatinine_mg_dl: number | null
+          ecg_finding: string | null
+          esr_mm_hr: number | null
+          facility_id: string | null
+          fasting_glucose_mg_dl: number | null
+          filaria_result: string | null
+          fitness_verdict: Database["public"]["Enums"]["lab_fitness"] | null
+          hbsag_result: string | null
+          hcg_pregnancy_result: string | null
+          hcv_result: string | null
+          hdl_mg_dl: number | null
+          hemoglobin_g_dl: number | null
+          hiv_result: string | null
+          id: string
+          lab_notes: string | null
+          ldl_mg_dl: number | null
+          leprosy_result: string | null
+          malaria_result: string | null
+          patient_id: string
+          platelet_count: number | null
+          purpose: string | null
+          random_glucose_mg_dl: number | null
+          rbc_count: number | null
+          rh_factor: string | null
+          sgot_ast_u_l: number | null
+          sgpt_alt_u_l: number | null
+          status: Database["public"]["Enums"]["lab_order_status"]
+          stool_notes: string | null
+          stool_occult_blood: string | null
+          stool_ova_parasites: string | null
+          tb_mantoux_result: string | null
+          tpha_result: string | null
+          triglycerides_mg_dl: number | null
+          updated_at: string
+          urea_mg_dl: number | null
+          uric_acid_mg_dl: number | null
+          urine_appearance: string | null
+          urine_bile: string | null
+          urine_blood: string | null
+          urine_colour: string | null
+          urine_ketones: string | null
+          urine_microscopy: string | null
+          urine_ph: number | null
+          urine_protein: string | null
+          urine_specific_gravity: number | null
+          urine_sugar: string | null
+          vdrl_result: string | null
+          wbc_count: number | null
+        }
+        Insert: {
+          alkaline_phosphatase_u_l?: number | null
+          bilirubin_mg_dl?: number | null
+          blood_group?: string | null
+          chest_xray_finding?: string | null
+          cholesterol_mg_dl?: number | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          creatinine_mg_dl?: number | null
+          ecg_finding?: string | null
+          esr_mm_hr?: number | null
+          facility_id?: string | null
+          fasting_glucose_mg_dl?: number | null
+          filaria_result?: string | null
+          fitness_verdict?: Database["public"]["Enums"]["lab_fitness"] | null
+          hbsag_result?: string | null
+          hcg_pregnancy_result?: string | null
+          hcv_result?: string | null
+          hdl_mg_dl?: number | null
+          hemoglobin_g_dl?: number | null
+          hiv_result?: string | null
+          id?: string
+          lab_notes?: string | null
+          ldl_mg_dl?: number | null
+          leprosy_result?: string | null
+          malaria_result?: string | null
+          patient_id: string
+          platelet_count?: number | null
+          purpose?: string | null
+          random_glucose_mg_dl?: number | null
+          rbc_count?: number | null
+          rh_factor?: string | null
+          sgot_ast_u_l?: number | null
+          sgpt_alt_u_l?: number | null
+          status?: Database["public"]["Enums"]["lab_order_status"]
+          stool_notes?: string | null
+          stool_occult_blood?: string | null
+          stool_ova_parasites?: string | null
+          tb_mantoux_result?: string | null
+          tpha_result?: string | null
+          triglycerides_mg_dl?: number | null
+          updated_at?: string
+          urea_mg_dl?: number | null
+          uric_acid_mg_dl?: number | null
+          urine_appearance?: string | null
+          urine_bile?: string | null
+          urine_blood?: string | null
+          urine_colour?: string | null
+          urine_ketones?: string | null
+          urine_microscopy?: string | null
+          urine_ph?: number | null
+          urine_protein?: string | null
+          urine_specific_gravity?: number | null
+          urine_sugar?: string | null
+          vdrl_result?: string | null
+          wbc_count?: number | null
+        }
+        Update: {
+          alkaline_phosphatase_u_l?: number | null
+          bilirubin_mg_dl?: number | null
+          blood_group?: string | null
+          chest_xray_finding?: string | null
+          cholesterol_mg_dl?: number | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          creatinine_mg_dl?: number | null
+          ecg_finding?: string | null
+          esr_mm_hr?: number | null
+          facility_id?: string | null
+          fasting_glucose_mg_dl?: number | null
+          filaria_result?: string | null
+          fitness_verdict?: Database["public"]["Enums"]["lab_fitness"] | null
+          hbsag_result?: string | null
+          hcg_pregnancy_result?: string | null
+          hcv_result?: string | null
+          hdl_mg_dl?: number | null
+          hemoglobin_g_dl?: number | null
+          hiv_result?: string | null
+          id?: string
+          lab_notes?: string | null
+          ldl_mg_dl?: number | null
+          leprosy_result?: string | null
+          malaria_result?: string | null
+          patient_id?: string
+          platelet_count?: number | null
+          purpose?: string | null
+          random_glucose_mg_dl?: number | null
+          rbc_count?: number | null
+          rh_factor?: string | null
+          sgot_ast_u_l?: number | null
+          sgpt_alt_u_l?: number | null
+          status?: Database["public"]["Enums"]["lab_order_status"]
+          stool_notes?: string | null
+          stool_occult_blood?: string | null
+          stool_ova_parasites?: string | null
+          tb_mantoux_result?: string | null
+          tpha_result?: string | null
+          triglycerides_mg_dl?: number | null
+          updated_at?: string
+          urea_mg_dl?: number | null
+          uric_acid_mg_dl?: number | null
+          urine_appearance?: string | null
+          urine_bile?: string | null
+          urine_blood?: string | null
+          urine_colour?: string | null
+          urine_ketones?: string | null
+          urine_microscopy?: string | null
+          urine_ph?: number | null
+          urine_protein?: string | null
+          urine_specific_gravity?: number | null
+          urine_sugar?: string | null
+          vdrl_result?: string | null
+          wbc_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_orders_facility_id_fkey"
+            columns: ["facility_id"]
+            isOneToOne: false
+            referencedRelation: "facilities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lab_orders_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       license_keys: {
         Row: {
           activated_at: string
@@ -676,6 +871,8 @@ export type Database = {
         | "lab_tech"
       invoice_payment_method: "cash" | "mpesa" | "insurance" | "bank"
       invoice_status: "draft" | "paid" | "cancelled"
+      lab_fitness: "fit" | "unfit" | "pending_review"
+      lab_order_status: "pending" | "in_progress" | "completed" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -813,6 +1010,8 @@ export const Constants = {
       ],
       invoice_payment_method: ["cash", "mpesa", "insurance", "bank"],
       invoice_status: ["draft", "paid", "cancelled"],
+      lab_fitness: ["fit", "unfit", "pending_review"],
+      lab_order_status: ["pending", "in_progress", "completed", "cancelled"],
     },
   },
 } as const
