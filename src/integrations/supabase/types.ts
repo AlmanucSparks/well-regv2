@@ -667,7 +667,13 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "registrar" | "supervisor" | "super_admin" | "nurse"
+      app_role:
+        | "admin"
+        | "registrar"
+        | "supervisor"
+        | "super_admin"
+        | "nurse"
+        | "lab_tech"
       invoice_payment_method: "cash" | "mpesa" | "insurance" | "bank"
       invoice_status: "draft" | "paid" | "cancelled"
     }
@@ -797,7 +803,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "registrar", "supervisor", "super_admin", "nurse"],
+      app_role: [
+        "admin",
+        "registrar",
+        "supervisor",
+        "super_admin",
+        "nurse",
+        "lab_tech",
+      ],
       invoice_payment_method: ["cash", "mpesa", "insurance", "bank"],
       invoice_status: ["draft", "paid", "cancelled"],
     },
