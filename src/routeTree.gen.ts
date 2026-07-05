@@ -16,6 +16,7 @@ import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as RegisterPatientRouteImport } from './routes/register-patient'
 import { Route as PatientsRouteImport } from './routes/patients'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as LabRouteImport } from './routes/lab'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as BillingRouteImport } from './routes/billing'
 import { Route as AuditRouteImport } from './routes/audit'
@@ -58,6 +59,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LabRoute = LabRouteImport.update({
+  id: '/lab',
+  path: '/lab',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/audit': typeof AuditRoute
   '/billing': typeof BillingRoute
   '/dashboard': typeof DashboardRoute
+  '/lab': typeof LabRoute
   '/login': typeof LoginRoute
   '/patients': typeof PatientsRouteWithChildren
   '/register-patient': typeof RegisterPatientRoute
@@ -109,6 +116,7 @@ export interface FileRoutesByTo {
   '/audit': typeof AuditRoute
   '/billing': typeof BillingRoute
   '/dashboard': typeof DashboardRoute
+  '/lab': typeof LabRoute
   '/login': typeof LoginRoute
   '/patients': typeof PatientsRouteWithChildren
   '/register-patient': typeof RegisterPatientRoute
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/audit': typeof AuditRoute
   '/billing': typeof BillingRoute
   '/dashboard': typeof DashboardRoute
+  '/lab': typeof LabRoute
   '/login': typeof LoginRoute
   '/patients': typeof PatientsRouteWithChildren
   '/register-patient': typeof RegisterPatientRoute
@@ -142,6 +151,7 @@ export interface FileRouteTypes {
     | '/audit'
     | '/billing'
     | '/dashboard'
+    | '/lab'
     | '/login'
     | '/patients'
     | '/register-patient'
@@ -157,6 +167,7 @@ export interface FileRouteTypes {
     | '/audit'
     | '/billing'
     | '/dashboard'
+    | '/lab'
     | '/login'
     | '/patients'
     | '/register-patient'
@@ -172,6 +183,7 @@ export interface FileRouteTypes {
     | '/audit'
     | '/billing'
     | '/dashboard'
+    | '/lab'
     | '/login'
     | '/patients'
     | '/register-patient'
@@ -188,6 +200,7 @@ export interface RootRouteChildren {
   AuditRoute: typeof AuditRoute
   BillingRoute: typeof BillingRoute
   DashboardRoute: typeof DashboardRoute
+  LabRoute: typeof LabRoute
   LoginRoute: typeof LoginRoute
   PatientsRoute: typeof PatientsRouteWithChildren
   RegisterPatientRoute: typeof RegisterPatientRoute
@@ -247,6 +260,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lab': {
+      id: '/lab'
+      path: '/lab'
+      fullPath: '/lab'
+      preLoaderRoute: typeof LabRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -311,6 +331,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuditRoute: AuditRoute,
   BillingRoute: BillingRoute,
   DashboardRoute: DashboardRoute,
+  LabRoute: LabRoute,
   LoginRoute: LoginRoute,
   PatientsRoute: PatientsRouteWithChildren,
   RegisterPatientRoute: RegisterPatientRoute,

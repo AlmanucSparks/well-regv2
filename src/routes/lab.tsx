@@ -188,11 +188,11 @@ function LabPage() {
     let orderId = editOrderId;
     let error;
     if (editOrderId) {
-      const r = await supabase.from("lab_orders").update(payload).eq("id", editOrderId);
+      const r = await supabase.from("lab_orders").update(payload as any).eq("id", editOrderId);
       error = r.error;
     } else {
       (payload as any).created_by = user!.id;
-      const r = await supabase.from("lab_orders").insert(payload).select("id").single();
+      const r = await supabase.from("lab_orders").insert(payload as any).select("id").single();
       error = r.error;
       orderId = r.data?.id ?? null;
     }
