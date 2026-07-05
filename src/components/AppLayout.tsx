@@ -13,6 +13,7 @@ import {
   FileBarChart,
   Stethoscope,
   Receipt,
+  FlaskConical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -24,6 +25,7 @@ const navItems = [
   { to: "/register-patient", label: "Register Patient", icon: UserPlus },
   { to: "/patients", label: "Patient Records", icon: Users },
   { to: "/triage", label: "Triage", icon: Stethoscope, nurseOrAdmin: true },
+  { to: "/lab", label: "Lab", icon: FlaskConical, labStaff: true },
   { to: "/billing", label: "Billing", icon: Receipt },
   { to: "/reports", label: "Reports", icon: FileBarChart },
   { to: "/staff", label: "Staff Management", icon: UserCog, adminOnly: true },
@@ -32,7 +34,7 @@ const navItems = [
 ];
 
 export function AppLayout({ children, title }: { children: ReactNode; title?: string }) {
-  const { user, loading, isAdmin, isSuperAdmin, isNurse, signOut } = useAuth();
+  const { user, loading, isAdmin, isSuperAdmin, isNurse, isLabTech, isSupervisor, signOut } = useAuth();
   const path = useRouterState({ select: (s) => s.location.pathname });
 
   if (loading) {
@@ -66,7 +68,9 @@ export function AppLayout({ children, title }: { children: ReactNode; title?: st
 
         <nav className="flex-1 space-y-1 px-3">
           {navItems
-            .filter((n) => (!n.adminOnly || isAdmin) && (!n.nurseOrAdmin || isAdmin || isNurse))
+            .filter((n) => (!n.adminOnly || isAdmin)
+              && (!n.nurseOrAdmin || isAdmin || isNurse)
+              && (!n.labStaff || isAdmin || isSupervisor || isLabTech))
             .map((n) => {
               const active = path === n.to || (n.to !== "/dashboard" && path.startsWith(n.to));
               return (
